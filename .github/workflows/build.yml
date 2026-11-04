@@ -6,34 +6,55 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Set up Python 3.11
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-    
+
     - name: Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential git python3-pip python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev autoconf libtool pkg-config libunwind-dev
-    
+
     - name: Install Buildozer
       run: |
         pip install buildozer cython==0.29.36
-    
+
+    - name: Create buildozer.spec
+      run: |
+        cat << 'EOF' > buildozer.spec
+        [app]
+        title = TV Remote Louis
+        package.name = tvremote
+        package.domain = org.louis
+        source.dir = .
+        source.include_exts = py,png,jpg,jpeg,webp
+        source.include_patterns = assets/*
+        version = 1.0
+        requirements = python3==3.11.8,hostpython3==3.11.8,kivy==2.3.0,pyjnius
+        orientation = portrait
+        fullscreen = 0
+        android.permissions = INTERNET,ACCESS_NETWORK_STATE
+        android.api = 33
+        android.minapi = 21
+        android.archs = arm64-v8a, armeabi-v7a
+        android.accept_sdk_license = True
+
+        [buildozer]
+        log_level = 2
+        warn_on_root = 1
+        EOF
+
     - name: Build APK
       run: |
-        buildozer init
-        # CORRECTION ICI : on force python3 ET hostpython3 à la même version
-        sed -i 's/requirements = python3/requirements = python3==3.11.8,hostpython3==3.11.8,kivy==2.3.0,pyjnius/' buildozer.spec
-        sed -i 's/# android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
         buildozer -v android debug
-    
+
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
