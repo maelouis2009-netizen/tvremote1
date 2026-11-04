@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     
     steps:
     - name: Checkout code
@@ -29,7 +29,8 @@ jobs:
     - name: Build APK
       run: |
         buildozer init
-        sed -i 's/requirements = python3/requirements = python3==3.11.8,kivy==2.3.0,pyjnius/' buildozer.spec
+        # CORRECTION ICI : on force python3 ET hostpython3 à la même version
+        sed -i 's/requirements = python3/requirements = python3==3.11.8,hostpython3==3.11.8,kivy==2.3.0,pyjnius/' buildozer.spec
         sed -i 's/# android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
         buildozer -v android debug
     
