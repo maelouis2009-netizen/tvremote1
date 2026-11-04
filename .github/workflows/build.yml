@@ -53,6 +53,8 @@ jobs:
 
     - name: Build APK
       run: |
+        # CORRECTION ICI : On force python3 ET hostpython3 à la même version (3.11.8)
+        sed -i 's/requirements = python3/requirements = python3==3.11.8,hostpython3==3.11.8,kivy==2.3.0,pyjnius/' buildozer.spec
         buildozer -v android debug
 
     - name: Upload APK Artifact
