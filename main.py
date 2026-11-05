@@ -16,9 +16,7 @@ from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.properties import StringProperty
 from kivy.metrics import dp
-from kivy.animation import Animation
 from adb_shell.adb_device import AdbDeviceTcp
-from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
 
 ANDROID = False
@@ -125,7 +123,6 @@ class AppCard(ButtonBehavior, RelativeLayout):
     def on_press(self):
         self._long_fired = False
         self._long_event = Clock.schedule_once(self._fire_long, 0.8)
-        Animation(scale=0.95, duration=0.1).start(self)
 
     def _fire_long(self, dt):
         self._long_fired = True
@@ -136,7 +133,6 @@ class AppCard(ButtonBehavior, RelativeLayout):
         if self._long_event is not None:
             self._long_event.cancel()
             self._long_event = None
-        Animation(scale=1.0, duration=0.1).start(self)
         if not self._long_fired and self.on_launch:
             self.on_launch(self.pkg)
 
@@ -293,7 +289,14 @@ class TVRemoteApp(App):
 
     def get_signer(self):
         key_path = os.path.join(self.user_data_dir, "tvremote_adb_key")
+        bundled = os.path.join(BASE_DIR, "assets", "adbkey.txt")
+        bundled_pub = os.path.join(BASE_DIR, "assets", "adbkey.pub.txt")
+        if not os.path.exists(key_path) and os.path.exists(bundled):
+            shutil.copyfile(bundled, key_path)
+            if os.path.exists(bundled_pub):
+                shutil.copyfile(bundled_pub, key_path + ".pub")
         if not os.path.exists(key_path):
+            from adb_shell.auth.keygen import keygen
             keygen(key_path)
         try:
             return PythonRSASigner.FromFile(key_path)
