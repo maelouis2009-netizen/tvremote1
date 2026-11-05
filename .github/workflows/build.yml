@@ -37,7 +37,7 @@ jobs:
         source.include_exts = py,png,jpg,jpeg,webp
         source.include_patterns = assets/*
         version = 1.0
-        requirements = python3,kivy==2.3.0,pyjnius
+        requirements = python3,kivy==2.3.1,pyjnius
         orientation = portrait
         fullscreen = 0
         android.permissions = INTERNET,ACCESS_NETWORK_STATE
@@ -53,8 +53,6 @@ jobs:
 
     - name: Build APK
       run: |
-        # CORRECTION ICI : On force python3 ET hostpython3 à la même version (3.11.8)
-        sed -i 's/requirements = python3/requirements = python3==3.11.8,hostpython3==3.11.8,kivy==2.3.0,pyjnius/' buildozer.spec
         buildozer -v android debug
 
     - name: Upload APK Artifact
