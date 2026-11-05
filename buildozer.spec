@@ -7,7 +7,7 @@ source.include_exts = py,png,jpg,jpeg,webp,txt
 source.exclude_dirs = bin,.buildozer,.git,.github,apk_build,__pycache__
 version = 1.0
 
-requirements = python3==3.11.5,hostpython3==3.11.5,kivy==2.3.1,adb-shell,rsa,pyasn1
+requirements = python3==3.11.5,hostpython3==3.11.5,kivy==2.3.1,filetype,pyjnius,adb-shell,rsa,pyasn1
 
 orientation = portrait
 fullscreen = 0
