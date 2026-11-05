@@ -43,7 +43,17 @@ jobs:
           mv assets/adbkey.txt.pub assets/adbkey.pub.txt
 
       - name: Build APK
-        run: buildozer -v android debug
+        shell: bash
+        run: buildozer -v android debug 2>&1 | tee build.log
+
+      - name: Show the error
+        if: failure()
+        shell: bash
+        run: |
+          echo "===== ERREURS ====="
+          grep -n -E "What went wrong|Execution failed|error:|Error:|FAILED|Traceback|Exception|Could not" build.log | tail -30
+          echo "===== FIN DU LOG ====="
+          grep -v "^#" build.log | tail -n 50
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
