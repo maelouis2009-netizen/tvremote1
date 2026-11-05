@@ -7,6 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,6 +34,13 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install buildozer cython==0.29.37
+
+      - name: Generate ADB key
+        run: |
+          pip install adb-shell
+          mkdir -p assets
+          python -c "from adb_shell.auth.keygen import keygen; keygen('assets/adbkey.txt')"
+          mv assets/adbkey.txt.pub assets/adbkey.pub.txt
 
       - name: Build APK
         run: buildozer -v android debug
