@@ -140,10 +140,10 @@ class RoundButton(Button):
     """Bouton rond avec couleur de fond"""
     def __init__(self, text, color, keycode, on_press_callback, btn_size=None, **kwargs):
         if btn_size is None:
-            btn_size = dp(65)
+            btn_size = dp(55)
         super().__init__(
             text=text,
-            font_size=dp(20),
+            font_size=dp(18),
             bold=True,
             color=(1, 1, 1, 1),
             background_color=color,
@@ -172,11 +172,12 @@ class TVRemoteApp(App):
         w, h = Window.size
         is_portrait = h > w
 
-        main_layout = BoxLayout(orientation='vertical', padding=15, spacing=12)
+        main_layout = BoxLayout(orientation='vertical', padding=dp(10), spacing=dp(8))
 
+        # Barre de recherche
         self.search_field = TextInput(
             hint_text="  Rechercher une application...",
-            size_hint_y=None, height=50, font_size='16sp',
+            size_hint_y=None, height=dp(45), font_size='16sp',
             background_color=(0.15, 0.15, 0.18, 1), foreground_color=(1, 1, 1, 1),
             cursor_color=(1, 1, 1, 1), hint_text_color=(0.5, 0.5, 0.5, 1), multiline=False
         )
@@ -184,101 +185,128 @@ class TVRemoteApp(App):
         main_layout.add_widget(self.search_field)
 
         if is_portrait:
-            self.scroll = ScrollView(size_hint_y=0.58)
-            self.apps_grid = GridLayout(cols=3, spacing=dp(12), size_hint_y=None, padding=dp(12))
+            # MODE PORTRAIT
+            self.scroll = ScrollView(size_hint_y=0.55)
+            self.apps_grid = GridLayout(cols=3, spacing=dp(10), size_hint_y=None, padding=dp(10))
             self.apps_grid.bind(minimum_height=self.apps_grid.setter('height'))
             self.scroll.add_widget(self.apps_grid)
             main_layout.add_widget(self.scroll)
 
-            self.status_label = Label(text="Chargement...", size_hint_y=None, height=25, color=(0.5, 0.5, 0.5, 1), font_size='12sp')
+            self.status_label = Label(text="Chargement...", size_hint_y=None, height=dp(20), color=(0.5, 0.5, 0.5, 1), font_size='11sp')
             main_layout.add_widget(self.status_label)
 
-            ctrl_layout = BoxLayout(orientation='vertical', size_hint_y=0.4, spacing=8)
+            # Contrôles
+            ctrl_layout = BoxLayout(orientation='vertical', size_hint_y=0.4, spacing=dp(6))
 
-            row1 = GridLayout(cols=3, spacing=10, size_hint_y=0.2)
+            # Ligne 1: PWR, MUTE, HOME, RET
+            row1 = GridLayout(cols=4, spacing=dp(8), size_hint_y=0.18)
             row1.add_widget(RoundButton("PWR", (0.9, 0.1, 0.1, 1), 26, self.send_key_async))
+            row1.add_widget(RoundButton("MUTE", (0.5, 0.5, 0.5, 1), 164, self.send_key_async))
             row1.add_widget(RoundButton("HOME", (0.2, 0.4, 0.8, 1), 3, self.send_key_async))
             row1.add_widget(RoundButton("RET", (0.4, 0.4, 0.4, 1), 4, self.send_key_async))
             ctrl_layout.add_widget(row1)
 
-            cross_layout = BoxLayout(orientation='vertical', spacing=6, size_hint_y=0.6)
+            # Pavé directionnel
+            cross_layout = BoxLayout(orientation='vertical', spacing=dp(5), size_hint_y=0.55)
 
-            up_row = GridLayout(cols=3, spacing=10, size_hint_y=0.33)
+            up_row = GridLayout(cols=3, spacing=dp(8), size_hint_y=0.33)
             up_row.add_widget(Label(text=""))
-            up_row.add_widget(RoundButton("^", (0.3, 0.3, 0.35, 1), 19, self.send_key_async))
+            up_row.add_widget(RoundButton("▲", (0.3, 0.3, 0.35, 1), 19, self.send_key_async))
             up_row.add_widget(Label(text=""))
             cross_layout.add_widget(up_row)
 
-            mid_row = GridLayout(cols=3, spacing=10, size_hint_y=0.34)
-            mid_row.add_widget(RoundButton("<", (0.3, 0.3, 0.35, 1), 21, self.send_key_async))
+            mid_row = GridLayout(cols=3, spacing=dp(8), size_hint_y=0.34)
+            mid_row.add_widget(RoundButton("◀", (0.3, 0.3, 0.35, 1), 21, self.send_key_async))
             mid_row.add_widget(RoundButton("OK", (0.1, 0.6, 0.2, 1), 23, self.send_key_async))
-            mid_row.add_widget(RoundButton(">", (0.3, 0.3, 0.35, 1), 22, self.send_key_async))
+            mid_row.add_widget(RoundButton("▶", (0.3, 0.3, 0.35, 1), 22, self.send_key_async))
             cross_layout.add_widget(mid_row)
 
-            down_row = GridLayout(cols=3, spacing=10, size_hint_y=0.33)
+            down_row = GridLayout(cols=3, spacing=dp(8), size_hint_y=0.33)
             down_row.add_widget(Label(text=""))
-            down_row.add_widget(RoundButton("v", (0.3, 0.3, 0.35, 1), 20, self.send_key_async))
+            down_row.add_widget(RoundButton("▼", (0.3, 0.3, 0.35, 1), 20, self.send_key_async))
             down_row.add_widget(Label(text=""))
             cross_layout.add_widget(down_row)
 
             ctrl_layout.add_widget(cross_layout)
 
-            vol_row = GridLayout(cols=3, spacing=10, size_hint_y=0.2)
-            vol_row.add_widget(RoundButton("-", (0.4, 0.4, 0.45, 1), 25, self.send_key_async))
-            vol_row.add_widget(Label(text=""))
-            vol_row.add_widget(RoundButton("+", (0.4, 0.4, 0.45, 1), 24, self.send_key_async))
-            ctrl_layout.add_widget(vol_row)
+            # Ligne 2: VOL-, VOL+, PLAY/PAUSE, STOP
+            row2 = GridLayout(cols=4, spacing=dp(8), size_hint_y=0.18)
+            row2.add_widget(RoundButton("VOL-", (0.4, 0.4, 0.45, 1), 25, self.send_key_async))
+            row2.add_widget(RoundButton("VOL+", (0.4, 0.4, 0.45, 1), 24, self.send_key_async))
+            row2.add_widget(RoundButton("PLAY", (0.2, 0.6, 0.2, 1), 85, self.send_key_async))
+            row2.add_widget(RoundButton("STOP", (0.6, 0.2, 0.2, 1), 86, self.send_key_async))
+            ctrl_layout.add_widget(row2)
+
+            # Ligne 3: CH-, CH+, MENU, INFO
+            row3 = GridLayout(cols=4, spacing=dp(8), size_hint_y=0.09)
+            row3.add_widget(RoundButton("CH-", (0.4, 0.4, 0.45, 1), 166, self.send_key_async, btn_size=dp(45)))
+            row3.add_widget(RoundButton("CH+", (0.4, 0.4, 0.45, 1), 167, self.send_key_async, btn_size=dp(45)))
+            row3.add_widget(RoundButton("MENU", (0.3, 0.3, 0.35, 1), 1, self.send_key_async, btn_size=dp(45)))
+            row3.add_widget(RoundButton("INFO", (0.3, 0.3, 0.35, 1), 82, self.send_key_async, btn_size=dp(45)))
+            ctrl_layout.add_widget(row3)
 
             main_layout.add_widget(ctrl_layout)
         else:
-            h_layout = BoxLayout(orientation='horizontal', spacing=15)
+            # MODE PAYSAGE
+            h_layout = BoxLayout(orientation='horizontal', spacing=dp(10))
 
-            ctrl_layout = BoxLayout(orientation='vertical', size_hint_x=0.28, spacing=8)
+            # Colonne gauche: Contrôles
+            ctrl_layout = BoxLayout(orientation='vertical', size_hint_x=0.3, spacing=dp(6))
 
-            row1 = GridLayout(cols=3, spacing=8, size_hint_y=0.15)
-            row1.add_widget(RoundButton("PWR", (0.9, 0.1, 0.1, 1), 26, self.send_key_async, btn_size=dp(55)))
-            row1.add_widget(RoundButton("HOME", (0.2, 0.4, 0.8, 1), 3, self.send_key_async, btn_size=dp(55)))
-            row1.add_widget(RoundButton("RET", (0.4, 0.4, 0.4, 1), 4, self.send_key_async, btn_size=dp(55)))
+            row1 = GridLayout(cols=4, spacing=dp(6), size_hint_y=0.15)
+            row1.add_widget(RoundButton("PWR", (0.9, 0.1, 0.1, 1), 26, self.send_key_async, btn_size=dp(45)))
+            row1.add_widget(RoundButton("MUTE", (0.5, 0.5, 0.5, 1), 164, self.send_key_async, btn_size=dp(45)))
+            row1.add_widget(RoundButton("HOME", (0.2, 0.4, 0.8, 1), 3, self.send_key_async, btn_size=dp(45)))
+            row1.add_widget(RoundButton("RET", (0.4, 0.4, 0.4, 1), 4, self.send_key_async, btn_size=dp(45)))
             ctrl_layout.add_widget(row1)
 
-            cross_layout = BoxLayout(orientation='vertical', spacing=6, size_hint_y=0.6)
+            cross_layout = BoxLayout(orientation='vertical', spacing=dp(5), size_hint_y=0.55)
 
-            up_row = GridLayout(cols=3, spacing=8, size_hint_y=0.33)
+            up_row = GridLayout(cols=3, spacing=dp(6), size_hint_y=0.33)
             up_row.add_widget(Label(text=""))
-            up_row.add_widget(RoundButton("^", (0.3, 0.3, 0.35, 1), 19, self.send_key_async, btn_size=dp(55)))
+            up_row.add_widget(RoundButton("▲", (0.3, 0.3, 0.35, 1), 19, self.send_key_async, btn_size=dp(45)))
             up_row.add_widget(Label(text=""))
             cross_layout.add_widget(up_row)
 
-            mid_row = GridLayout(cols=3, spacing=8, size_hint_y=0.34)
-            mid_row.add_widget(RoundButton("<", (0.3, 0.3, 0.35, 1), 21, self.send_key_async, btn_size=dp(55)))
-            mid_row.add_widget(RoundButton("OK", (0.1, 0.6, 0.2, 1), 23, self.send_key_async, btn_size=dp(55)))
-            mid_row.add_widget(RoundButton(">", (0.3, 0.3, 0.35, 1), 22, self.send_key_async, btn_size=dp(55)))
+            mid_row = GridLayout(cols=3, spacing=dp(6), size_hint_y=0.34)
+            mid_row.add_widget(RoundButton("◀", (0.3, 0.3, 0.35, 1), 21, self.send_key_async, btn_size=dp(45)))
+            mid_row.add_widget(RoundButton("OK", (0.1, 0.6, 0.2, 1), 23, self.send_key_async, btn_size=dp(45)))
+            mid_row.add_widget(RoundButton("▶", (0.3, 0.3, 0.35, 1), 22, self.send_key_async, btn_size=dp(45)))
             cross_layout.add_widget(mid_row)
 
-            down_row = GridLayout(cols=3, spacing=8, size_hint_y=0.33)
+            down_row = GridLayout(cols=3, spacing=dp(6), size_hint_y=0.33)
             down_row.add_widget(Label(text=""))
-            down_row.add_widget(RoundButton("v", (0.3, 0.3, 0.35, 1), 20, self.send_key_async, btn_size=dp(55)))
+            down_row.add_widget(RoundButton("▼", (0.3, 0.3, 0.35, 1), 20, self.send_key_async, btn_size=dp(45)))
             down_row.add_widget(Label(text=""))
             cross_layout.add_widget(down_row)
 
             ctrl_layout.add_widget(cross_layout)
 
-            vol_row = GridLayout(cols=3, spacing=8, size_hint_y=0.15)
-            vol_row.add_widget(RoundButton("-", (0.4, 0.4, 0.45, 1), 25, self.send_key_async, btn_size=dp(55)))
-            vol_row.add_widget(Label(text=""))
-            vol_row.add_widget(RoundButton("+", (0.4, 0.4, 0.45, 1), 24, self.send_key_async, btn_size=dp(55)))
-            ctrl_layout.add_widget(vol_row)
+            row2 = GridLayout(cols=4, spacing=dp(6), size_hint_y=0.15)
+            row2.add_widget(RoundButton("VOL-", (0.4, 0.4, 0.45, 1), 25, self.send_key_async, btn_size=dp(45)))
+            row2.add_widget(RoundButton("VOL+", (0.4, 0.4, 0.45, 1), 24, self.send_key_async, btn_size=dp(45)))
+            row2.add_widget(RoundButton("PLAY", (0.2, 0.6, 0.2, 1), 85, self.send_key_async, btn_size=dp(45)))
+            row2.add_widget(RoundButton("STOP", (0.6, 0.2, 0.2, 1), 86, self.send_key_async, btn_size=dp(45)))
+            ctrl_layout.add_widget(row2)
+
+            row3 = GridLayout(cols=4, spacing=dp(6), size_hint_y=0.1)
+            row3.add_widget(RoundButton("CH-", (0.4, 0.4, 0.45, 1), 166, self.send_key_async, btn_size=dp(35)))
+            row3.add_widget(RoundButton("CH+", (0.4, 0.4, 0.45, 1), 167, self.send_key_async, btn_size=dp(35)))
+            row3.add_widget(RoundButton("MENU", (0.3, 0.3, 0.35, 1), 1, self.send_key_async, btn_size=dp(35)))
+            row3.add_widget(RoundButton("INFO", (0.3, 0.3, 0.35, 1), 82, self.send_key_async, btn_size=dp(35)))
+            ctrl_layout.add_widget(row3)
 
             h_layout.add_widget(ctrl_layout)
 
+            # Colonne droite: Applications
             right_layout = BoxLayout(orientation='vertical')
             self.scroll = ScrollView()
-            self.apps_grid = GridLayout(cols=4, spacing=dp(12), size_hint_y=None, padding=dp(12))
+            self.apps_grid = GridLayout(cols=4, spacing=dp(10), size_hint_y=None, padding=dp(10))
             self.apps_grid.bind(minimum_height=self.apps_grid.setter('height'))
             self.scroll.add_widget(self.apps_grid)
             right_layout.add_widget(self.scroll)
 
-            self.status_label = Label(text="Chargement...", size_hint_y=None, height=25, color=(0.5, 0.5, 0.5, 1), font_size='12sp')
+            self.status_label = Label(text="Chargement...", size_hint_y=None, height=dp(20), color=(0.5, 0.5, 0.5, 1), font_size='11sp')
             right_layout.add_widget(self.status_label)
 
             h_layout.add_widget(right_layout)
