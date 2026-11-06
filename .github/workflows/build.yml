@@ -7,7 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -28,7 +28,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y git zip unzip autoconf libtool pkg-config \
             zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake \
-            libffi-dev libssl-dev
+            libffi-dev libssl-dev ant
+
+      - name: Use system Ant (avoids flaky download)
+        run: |
+          mkdir -p ~/.buildozer/android/platform
+          ln -sfn /usr/share/ant ~/.buildozer/android/platform/apache-ant-1.9.4
 
       - name: Install Buildozer
         run: |
@@ -42,16 +47,25 @@ jobs:
           python -c "from adb_shell.auth.keygen import keygen; keygen('assets/adbkey.txt')"
           mv assets/adbkey.txt.pub assets/adbkey.pub.txt
 
-      - name: Build APK
+      - name: Build APK (3 attempts)
         shell: bash
-        run: buildozer -v android debug 2>&1 | tee build.log
+        run: |
+          set +e
+          for i in 1 2 3; do
+            echo "=== Tentative $i ==="
+            buildozer -v android debug 2>&1 | tee -a build.log
+            code=${PIPESTATUS[0]}
+            if [ "$code" -eq 0 ]; then exit 0; fi
+            sleep 20
+          done
+          exit 1
 
       - name: Show the error
         if: failure()
         shell: bash
         run: |
           echo "===== ERREURS ====="
-          grep -n -E "What went wrong|Execution failed|error:|Error:|FAILED|Traceback|Exception|Could not" build.log | tail -30
+          grep -n -E "What went wrong|Execution failed|error:|Error:|FAILED|SyntaxError|URLError|Could not" build.log | tail -30
           echo "===== FIN DU LOG ====="
           grep -v "^#" build.log | tail -n 50
 
