@@ -95,14 +95,14 @@ class AppCard(ButtonBehavior, RelativeLayout):
         self.on_long_press = on_long_press
         self._long_fired = False
         self._long_event = None
-        
+
         with self.canvas.before:
             Color(0.15, 0.15, 0.18, 0.3)
             self.shadow = RoundedRectangle(size=(self.size[0]-4, self.size[1]-4), pos=(self.pos[0]+2, self.pos[1]-2), radius=[dp(16)])
             Color(*color)
             self.rect = RoundedRectangle(size=self.size, pos=self.pos, radius=[dp(16)])
         self.bind(size=self._update_canvas, pos=self._update_canvas)
-        
+
         if image_path:
             img = Image(source=image_path, size_hint=(0.75, 0.65), pos_hint={'center_x': 0.5, 'center_y': 0.68}, allow_stretch=True, keep_ratio=True)
             self.add_widget(img)
@@ -155,7 +155,7 @@ class RoundButton(Button):
         self.keycode = keycode
         self.on_press_callback = on_press_callback
         self.bind(on_press=self._on_press)
-    
+
     def _on_press(self, instance):
         if self.on_press_callback:
             self.on_press_callback(self.keycode)
@@ -168,10 +168,10 @@ class TVRemoteApp(App):
         USER_LOGO_DIR = os.path.join(self.user_data_dir, "logos")
         os.makedirs(USER_LOGO_DIR, exist_ok=True)
         Window.clearcolor = (0.08, 0.08, 0.1, 1)
-        
+
         w, h = Window.size
         is_portrait = h > w
-        
+
         main_layout = BoxLayout(orientation='vertical', padding=15, spacing=12)
 
         self.search_field = TextInput(
@@ -194,104 +194,105 @@ class TVRemoteApp(App):
             main_layout.add_widget(self.status_label)
 
             ctrl_layout = BoxLayout(orientation='vertical', size_hint_y=0.4, spacing=8)
-            
+
             row1 = GridLayout(cols=3, spacing=10, size_hint_y=0.2)
             row1.add_widget(RoundButton("PWR", (0.9, 0.1, 0.1, 1), 26, self.send_key_async))
             row1.add_widget(RoundButton("HOME", (0.2, 0.4, 0.8, 1), 3, self.send_key_async))
             row1.add_widget(RoundButton("RET", (0.4, 0.4, 0.4, 1), 4, self.send_key_async))
             ctrl_layout.add_widget(row1)
-            
+
             cross_layout = BoxLayout(orientation='vertical', spacing=6, size_hint_y=0.6)
-            
+
             up_row = GridLayout(cols=3, spacing=10, size_hint_y=0.33)
             up_row.add_widget(Label(text=""))
             up_row.add_widget(RoundButton("^", (0.3, 0.3, 0.35, 1), 19, self.send_key_async))
             up_row.add_widget(Label(text=""))
             cross_layout.add_widget(up_row)
-            
+
             mid_row = GridLayout(cols=3, spacing=10, size_hint_y=0.34)
             mid_row.add_widget(RoundButton("<", (0.3, 0.3, 0.35, 1), 21, self.send_key_async))
             mid_row.add_widget(RoundButton("OK", (0.1, 0.6, 0.2, 1), 23, self.send_key_async))
             mid_row.add_widget(RoundButton(">", (0.3, 0.3, 0.35, 1), 22, self.send_key_async))
             cross_layout.add_widget(mid_row)
-            
+
             down_row = GridLayout(cols=3, spacing=10, size_hint_y=0.33)
             down_row.add_widget(Label(text=""))
             down_row.add_widget(RoundButton("v", (0.3, 0.3, 0.35, 1), 20, self.send_key_async))
             down_row.add_widget(Label(text=""))
             cross_layout.add_widget(down_row)
-            
+
             ctrl_layout.add_widget(cross_layout)
-            
+
             vol_row = GridLayout(cols=3, spacing=10, size_hint_y=0.2)
             vol_row.add_widget(RoundButton("-", (0.4, 0.4, 0.45, 1), 25, self.send_key_async))
             vol_row.add_widget(Label(text=""))
             vol_row.add_widget(RoundButton("+", (0.4, 0.4, 0.45, 1), 24, self.send_key_async))
             ctrl_layout.add_widget(vol_row)
-            
+
             main_layout.add_widget(ctrl_layout)
         else:
             h_layout = BoxLayout(orientation='horizontal', spacing=15)
-            
+
             ctrl_layout = BoxLayout(orientation='vertical', size_hint_x=0.28, spacing=8)
-            
+
             row1 = GridLayout(cols=3, spacing=8, size_hint_y=0.15)
             row1.add_widget(RoundButton("PWR", (0.9, 0.1, 0.1, 1), 26, self.send_key_async, btn_size=dp(55)))
             row1.add_widget(RoundButton("HOME", (0.2, 0.4, 0.8, 1), 3, self.send_key_async, btn_size=dp(55)))
             row1.add_widget(RoundButton("RET", (0.4, 0.4, 0.4, 1), 4, self.send_key_async, btn_size=dp(55)))
             ctrl_layout.add_widget(row1)
-            
+
             cross_layout = BoxLayout(orientation='vertical', spacing=6, size_hint_y=0.6)
-            
+
             up_row = GridLayout(cols=3, spacing=8, size_hint_y=0.33)
             up_row.add_widget(Label(text=""))
             up_row.add_widget(RoundButton("^", (0.3, 0.3, 0.35, 1), 19, self.send_key_async, btn_size=dp(55)))
             up_row.add_widget(Label(text=""))
             cross_layout.add_widget(up_row)
-            
+
             mid_row = GridLayout(cols=3, spacing=8, size_hint_y=0.34)
             mid_row.add_widget(RoundButton("<", (0.3, 0.3, 0.35, 1), 21, self.send_key_async, btn_size=dp(55)))
             mid_row.add_widget(RoundButton("OK", (0.1, 0.6, 0.2, 1), 23, self.send_key_async, btn_size=dp(55)))
             mid_row.add_widget(RoundButton(">", (0.3, 0.3, 0.35, 1), 22, self.send_key_async, btn_size=dp(55)))
             cross_layout.add_widget(mid_row)
-            
+
             down_row = GridLayout(cols=3, spacing=8, size_hint_y=0.33)
             down_row.add_widget(Label(text=""))
             down_row.add_widget(RoundButton("v", (0.3, 0.3, 0.35, 1), 20, self.send_key_async, btn_size=dp(55)))
             down_row.add_widget(Label(text=""))
             cross_layout.add_widget(down_row)
-            
+
             ctrl_layout.add_widget(cross_layout)
-            
+
             vol_row = GridLayout(cols=3, spacing=8, size_hint_y=0.15)
             vol_row.add_widget(RoundButton("-", (0.4, 0.4, 0.45, 1), 25, self.send_key_async, btn_size=dp(55)))
             vol_row.add_widget(Label(text=""))
             vol_row.add_widget(RoundButton("+", (0.4, 0.4, 0.45, 1), 24, self.send_key_async, btn_size=dp(55)))
             ctrl_layout.add_widget(vol_row)
-            
+
             h_layout.add_widget(ctrl_layout)
-            
+
             right_layout = BoxLayout(orientation='vertical')
             self.scroll = ScrollView()
             self.apps_grid = GridLayout(cols=4, spacing=dp(12), size_hint_y=None, padding=dp(12))
             self.apps_grid.bind(minimum_height=self.apps_grid.setter('height'))
             self.scroll.add_widget(self.apps_grid)
             right_layout.add_widget(self.scroll)
-            
+
             self.status_label = Label(text="Chargement...", size_hint_y=None, height=25, color=(0.5, 0.5, 0.5, 1), font_size='12sp')
             right_layout.add_widget(self.status_label)
-            
+
             h_layout.add_widget(right_layout)
             main_layout.add_widget(h_layout)
 
         self.load_apps_async()
         return main_layout
 
-        def get_signer(self):
+    def get_signer(self):
         key_path = os.path.join(self.user_data_dir, "tvremote_adb_key")
         if not os.path.exists(key_path):
             from adb_shell.auth.keygen import keygen
             keygen(key_path)
+
         try:
             return PythonRSASigner.FromFile(key_path)
         except AttributeError:
@@ -303,6 +304,8 @@ class TVRemoteApp(App):
                 with open(pub_path, "r") as f:
                     pub = f.read()
             return PythonRSASigner(pub=pub, priv=priv)
+
+    def get_device(self):
         try:
             dev = AdbDeviceTcp(TV_IP, ADB_PORT, default_transport_timeout_s=5)
             dev.connect(rsa_keys=[self.get_signer()], auth_timeout_s=10, read_timeout_s=10)
