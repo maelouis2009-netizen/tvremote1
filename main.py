@@ -287,24 +287,22 @@ class TVRemoteApp(App):
         self.load_apps_async()
         return main_layout
 
-    def get_signer(self):
-    key_path = os.path.join(self.user_data_dir, "tvremote_adb_key")
-    if not os.path.exists(key_path):
-        from adb_shell.auth.keygen import keygen
-        keygen(key_path)
-    try:
-        return PythonRSASigner.FromFile(key_path)
-    except AttributeError:
-        with open(key_path, "r") as f:
-            priv = f.read()
-        pub = None
-        pub_path = key_path + ".pub"
-        if os.path.exists(pub_path):
-            with open(pub_path, "r") as f:
-                pub = f.read()
-        return PythonRSASigner(pub=pub, priv=priv)
-
-    def get_device(self):
+        def get_signer(self):
+        key_path = os.path.join(self.user_data_dir, "tvremote_adb_key")
+        if not os.path.exists(key_path):
+            from adb_shell.auth.keygen import keygen
+            keygen(key_path)
+        try:
+            return PythonRSASigner.FromFile(key_path)
+        except AttributeError:
+            with open(key_path, "r") as f:
+                priv = f.read()
+            pub = None
+            pub_path = key_path + ".pub"
+            if os.path.exists(pub_path):
+                with open(pub_path, "r") as f:
+                    pub = f.read()
+            return PythonRSASigner(pub=pub, priv=priv)
         try:
             dev = AdbDeviceTcp(TV_IP, ADB_PORT, default_transport_timeout_s=5)
             dev.connect(rsa_keys=[self.get_signer()], auth_timeout_s=10, read_timeout_s=10)
