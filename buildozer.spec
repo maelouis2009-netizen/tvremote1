@@ -12,7 +12,7 @@ version = 0.1
 requirements = python3==3.11.5,kivy==2.3.0,adb-shell,cryptography,pyjnius,pillow
 p4a.branch = v2024.01.21
 
-orientation = all
+orientation = portrait
 fullscreen = 0
 
 android.permissions = INTERNET, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE
