@@ -12,7 +12,6 @@ requirements = python3==3.11.5,hostpython3==3.11.5,kivy==2.3.1,pillow,requests,a
 orientation = portrait
 fullscreen = 0
 
-android.permissions = INTERNET,ACCESS_NETWORK_STATE
 android.api = 33
 android.minapi = 21
 android.ndk = 25b
