@@ -7,7 +7,7 @@ source.include_exts = py,png,jpg,jpeg,webp,txt
 source.exclude_dirs = bin,.buildozer,.git,.github,apk_build,__pycache__
 version = 1.0
 
-requirements = python3==3.11.5,hostpython3==3.11.5,kivy==2.3.1,sdl2,pyjnius,pillow,requests,adb-shell,cryptography,pycryptodome,filetype
+requirements = python3==3.11.5,hostpython3==3.11.5,kivy==2.3.1,sdl2,pyjnius,pillow,requests,adb-shell,cryptography,pycryptodome,filetype,libffi,openssl,charset-normalizer,idna,urllib3,certifi,pyasn1,rsa
 
 orientation = portrait
 fullscreen = 0
