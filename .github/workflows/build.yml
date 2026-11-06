@@ -3,7 +3,8 @@ on: [push, pull_request]
 
 jobs:
   build-android:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # <-- On force Ubuntu 22.04
+    
     steps:
       - uses: actions/checkout@v4
       
@@ -23,7 +24,7 @@ jobs:
           yes | buildozer android debug
           
       - name: Upload APK
-        uses: actions/upload-artifact@v4  # <-- Version mise à jour
+        uses: actions/upload-artifact@v4
         with:
           name: package
           path: bin/*.apk
