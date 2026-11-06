@@ -1,26 +1,22 @@
 [app]
-title = TV Remote Louis
+title = TV Remote
 package.name = tvremote
-package.domain = org.louis
+package.domain = org.test
 source.dir = .
-source.include_exts = py,png,jpg,jpeg,webp,txt
-source.exclude_dirs = bin,.buildozer,.git,.github,apk_build,__pycache__
-version = 1.0
+source.include_exts = py,png,jpg,kv,atlas,webp,json,txt
+source.include_patterns = assets/logos/*.png, assets/logos/*.jpg, assets/logos/*.jpeg, assets/logos/*.webp, assets/adbkey.txt, assets/adbkey.pub.txt
+version = 0.1
 
-requirements = python3==3.11.5,hostpython3==3.11.5,kivy==2.3.1,sdl2,pyjnius,pillow,requests,adb-shell,cryptography,pycryptodome,filetype,libffi,openssl,charset-normalizer,idna,urllib3,certifi,pyasn1,rsa
-
-orientation = portrait
+requirements = python3,kivy==2.3.0,adb-shell,cryptography,pyjnius,pillow
+orientation = all
 fullscreen = 0
 
+android.permissions = INTERNET, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE
 android.api = 33
 android.minapi = 21
-android.ndk = 25b
-android.archs = arm64-v8a
-android.accept_sdk_license = True
-android.enable_androidx = True
-android.permissions = INTERNET,ACCESS_NETWORK_STATE
+android.archs = arm64-v8a, armeabi-v7a
+android.allow_backup = True
 
-p4a.branch = v2024.01.21
 [buildozer]
 log_level = 2
-warn_on_root = 0
+warn_on_root = 1
