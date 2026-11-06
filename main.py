@@ -27,8 +27,8 @@ try:
 except Exception:
     ANDROID = False
 
-TV_IP = "192.168.8.7"
-ADB_PORT = 5555
+TV_IP = os.environ.get("TV_REMOTE_IP", "192.168.8.7")
+ADB_PORT = int(os.environ.get("TV_REMOTE_ADB_PORT", "5555"))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BUNDLED_LOGO_DIR = os.path.join(BASE_DIR, "assets", "logos")
 EXTS = (".png", ".jpg", ".jpeg", ".webp")
@@ -288,27 +288,21 @@ class TVRemoteApp(App):
         return main_layout
 
     def get_signer(self):
-        key_path = os.path.join(self.user_data_dir, "tvremote_adb_key")
-        bundled = os.path.join(BASE_DIR, "assets", "adbkey.txt")
-        bundled_pub = os.path.join(BASE_DIR, "assets", "adbkey.pub.txt")
-        if not os.path.exists(key_path) and os.path.exists(bundled):
-            shutil.copyfile(bundled, key_path)
-            if os.path.exists(bundled_pub):
-                shutil.copyfile(bundled_pub, key_path + ".pub")
-        if not os.path.exists(key_path):
-            from adb_shell.auth.keygen import keygen
-            keygen(key_path)
-        try:
-            return PythonRSASigner.FromFile(key_path)
-        except AttributeError:
-            with open(key_path, "r") as f:
-                priv = f.read()
-            pub = None
-            pub_path = key_path + ".pub"
-            if os.path.exists(pub_path):
-                with open(pub_path, "r") as f:
-                    pub = f.read()
-            return PythonRSASigner(pub=pub, priv=priv)
+    key_path = os.path.join(self.user_data_dir, "tvremote_adb_key")
+    if not os.path.exists(key_path):
+        from adb_shell.auth.keygen import keygen
+        keygen(key_path)
+    try:
+        return PythonRSASigner.FromFile(key_path)
+    except AttributeError:
+        with open(key_path, "r") as f:
+            priv = f.read()
+        pub = None
+        pub_path = key_path + ".pub"
+        if os.path.exists(pub_path):
+            with open(pub_path, "r") as f:
+                pub = f.read()
+        return PythonRSASigner(pub=pub, priv=priv)
 
     def get_device(self):
         try:
