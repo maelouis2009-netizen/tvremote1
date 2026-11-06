@@ -1,17 +1,20 @@
 import os
+import json
 import shutil
 import threading
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
+from kivy.uix.widget import Widget
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.textinput import TextInput
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.behaviors import ButtonBehavior
-from kivy.graphics import Color, RoundedRectangle
+from kivy.graphics import Color, RoundedRectangle, Ellipse, Triangle
 from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.properties import StringProperty
@@ -85,10 +88,10 @@ def find_logo(slug):
     return None
 
 class AppCard(ButtonBehavior, RelativeLayout):
-    def __init__(self, app_name, pkg, color, image_path=None, on_launch=None, on_long_press=None, **kwargs):
+    def __init__(self, app_name, pkg, color, image_path=None, on_launch=None, on_long_press=None, card_size=None, is_fav=False, **kwargs):
         super().__init__(**kwargs)
         self.size_hint = (None, None)
-        self.size = (dp(100), dp(125))
+        self.size = card_size or (dp(100), dp(125))
         self.pkg = pkg
         self.app_name = app_name
         self.on_launch = on_launch
@@ -96,17 +99,32 @@ class AppCard(ButtonBehavior, RelativeLayout):
         self._long_fired = False
         self._long_event = None
         
+        card_color = (0.15, 0.15, 0.18, 1) if image_path else color
         with self.canvas.before:
             Color(0.15, 0.15, 0.18, 0.3)
-            self.shadow = RoundedRectangle(size=(self.size[0]-4, self.size[1]-4), pos=(self.pos[0]+2, self.pos[1]-2), radius=[dp(16)])
-            Color(*color)
-            self.rect = RoundedRectangle(size=self.size, pos=self.pos, radius=[dp(16)])
+            self.shadow = RoundedRectangle(size=(self.size[0]-4, self.size[1]-4), pos=(2, -2), radius=[dp(16)])
+            Color(*card_color)
+            self.rect = RoundedRectangle(size=self.size, pos=(0, 0), radius=[dp(16)])
         self.bind(size=self._update_canvas, pos=self._update_canvas)
         
+        if is_fav:
+            with self.canvas.after:
+                Color(1, 0.8, 0.1, 1)
+                Ellipse(pos=(self.size[0] - dp(20), self.size[1] - dp(20)), size=(dp(14), dp(14)))
+
         if image_path:
-            img = Image(source=image_path, size_hint=(0.75, 0.65), pos_hint={'center_x': 0.5, 'center_y': 0.68}, allow_stretch=True, keep_ratio=True)
+            img = Image(source=image_path, size_hint=(0.75, 0.65), pos_hint={'center_x': 0.5, 'center_y': 0.68})
+            if hasattr(img, 'fit_mode'):
+                img.fit_mode = "contain"
+            else:
+                img.allow_stretch = True
+                img.keep_ratio = True
             self.add_widget(img)
-            label = Label(text=app_name, color=(1,1,1,1), font_size=dp(10), bold=True, size_hint=(1, 0.25), pos_hint={'center_x': 0.5, 'center_y': 0.12})
+            
+            label = Label(text=app_name, color=(1,1,1,1), font_size=dp(10), bold=True, 
+                          size_hint=(0.9, 0.3), pos_hint={'center_x': 0.5, 'center_y': 0.15},
+                          halign='center', valign='middle')
+            label.bind(size=lambda inst, val: setattr(inst, 'text_size', val))
             self.add_widget(label)
         else:
             label = Label(text=app_name, color=(1,1,1,1), font_size=dp(12), bold=True, halign='center', valign='middle')
@@ -115,9 +133,9 @@ class AppCard(ButtonBehavior, RelativeLayout):
             self.add_widget(label)
 
     def _update_canvas(self, instance, value):
-        self.shadow.pos = (instance.pos[0]+2, instance.pos[1]-2)
+        self.shadow.pos = (2, -2)
         self.shadow.size = (instance.size[0]-4, instance.size[1]-4)
-        self.rect.pos = instance.pos
+        self.rect.pos = (0, 0)
         self.rect.size = instance.size
 
     def on_press(self):
@@ -136,29 +154,97 @@ class AppCard(ButtonBehavior, RelativeLayout):
         if not self._long_fired and self.on_launch:
             self.on_launch(self.pkg)
 
-class RoundButton(Button):
-    """Bouton rond avec couleur de fond"""
-    def __init__(self, text, color, keycode, on_press_callback, btn_size=None, **kwargs):
-        if btn_size is None:
-            btn_size = dp(65)
+class KeyButton(Button):
+    def __init__(self, text, color, keycode, callback, **kwargs):
+        kwargs.setdefault('font_size', dp(18))
         super().__init__(
-            text=text,
-            font_size=dp(20),
-            bold=True,
-            color=(1, 1, 1, 1),
-            background_color=color,
-            background_normal='',
-            size_hint=(None, None),
-            size=(btn_size, btn_size),
+            text=text, bold=True, color=(1, 1, 1, 1),
+            background_normal='', background_down='', background_color=(0, 0, 0, 0),
             **kwargs
         )
+        self.base_color = color
         self.keycode = keycode
-        self.on_press_callback = on_press_callback
-        self.bind(on_press=self._on_press)
-    
-    def _on_press(self, instance):
-        if self.on_press_callback:
-            self.on_press_callback(self.keycode)
+        self.callback = callback
+        with self.canvas.before:
+            self._col = Color(*color)
+            self._bg = RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(14)])
+        self.bind(pos=self._upd, size=self._upd, state=self._on_state)
+        self.bind(on_press=lambda *_: self.callback(self.keycode))
+
+    def _upd(self, *args):
+        self._bg.pos = self.pos
+        self._bg.size = self.size
+
+    def _on_state(self, *args):
+        r, g, b, a = self.base_color
+        if self.state == 'down':
+            self._col.rgba = (min(r + 0.25, 1), min(g + 0.25, 1), min(b + 0.25, 1), a)
+        else:
+            self._col.rgba = self.base_color
+
+class DPad(Widget):
+    def __init__(self, callback, **kwargs):
+        super().__init__(**kwargs)
+        self.callback = callback
+        self.active = None
+        self.ok_label = Label(text="OK", bold=True, font_size=dp(22), color=(1, 1, 1, 1))
+        self.add_widget(self.ok_label)
+        self.bind(pos=self.redraw, size=self.redraw)
+
+    def redraw(self, *args):
+        self.canvas.before.clear()
+        cx, cy = self.center_x, self.center_y
+        r = min(self.width, self.height) / 2
+        d = r * 0.70
+        h = r * 0.12
+        t = r * 0.14
+        normal = (0.85, 0.86, 0.92, 1)
+        lit = (0.35, 0.65, 1, 1)
+        def col(name):
+            return lit if self.active == name else normal
+        with self.canvas.before:
+            Color(0.18, 0.19, 0.25, 1)
+            Ellipse(pos=(cx - r, cy - r), size=(2 * r, 2 * r))
+            if self.active == 'ok':
+                Color(0.25, 0.75, 0.35, 1)
+            else:
+                Color(0.1, 0.6, 0.2, 1)
+            Ellipse(pos=(cx - r * 0.40, cy - r * 0.40), size=(r * 0.80, r * 0.80))
+            Color(*col('up'))
+            Triangle(points=[cx, cy + d + h, cx - t, cy + d - h, cx + t, cy + d - h])
+            Color(*col('down'))
+            Triangle(points=[cx, cy - d - h, cx - t, cy - d + h, cx + t, cy - d + h])
+            Color(*col('left'))
+            Triangle(points=[cx - d - h, cy, cx - d + h, cy - t, cx - d + h, cy + t])
+            Color(*col('right'))
+            Triangle(points=[cx + d + h, cy, cx + d - h, cy - t, cx + d - h, cy + t])
+        self.ok_label.size = (r * 0.8, r * 0.8)
+        self.ok_label.center = (cx, cy)
+
+    def on_touch_down(self, touch):
+        if not self.collide_point(*touch.pos):
+            return False
+        cx, cy = self.center_x, self.center_y
+        r = min(self.width, self.height) / 2
+        dx, dy = touch.x - cx, touch.y - cy
+        dist = (dx * dx + dy * dy) ** 0.5
+        if dist > r:
+            return False
+        if dist < r * 0.40:
+            name, code = 'ok', 23
+        elif abs(dx) > abs(dy):
+            name, code = ('right', 22) if dx > 0 else ('left', 21)
+        else:
+            name, code = ('up', 19) if dy > 0 else ('down', 20)
+        self.active = name
+        self.redraw()
+        Clock.schedule_once(self._release, 0.15)
+        self.callback(code)
+        return True
+
+    def _release(self, dt):
+        self.active = None
+        self.redraw()
 
 class TVRemoteApp(App):
     search_text = StringProperty("")
@@ -168,124 +254,188 @@ class TVRemoteApp(App):
         USER_LOGO_DIR = os.path.join(self.user_data_dir, "logos")
         os.makedirs(USER_LOGO_DIR, exist_ok=True)
         Window.clearcolor = (0.08, 0.08, 0.1, 1)
-        
+        self.favorites = self.load_favorites()
+        self.fav_edit = False
+
         w, h = Window.size
         is_portrait = h > w
         
-        main_layout = BoxLayout(orientation='vertical', padding=15, spacing=12)
+        main_layout = BoxLayout(orientation='vertical', padding=dp(12), spacing=dp(10))
 
+        if is_portrait:
+            controls = self.build_controls()
+            controls.size_hint_y = None
+            controls.height = dp(470)
+            main_layout.add_widget(controls)
+            main_layout.add_widget(self.build_favorites())
+            main_layout.add_widget(self.build_search_field())
+            self.scroll = ScrollView()
+            self.apps_grid = self.make_apps_grid(w)
+            self.scroll.add_widget(self.apps_grid)
+            main_layout.add_widget(self.scroll)
+        else:
+            h_layout = BoxLayout(orientation='horizontal', spacing=dp(15))
+            controls = self.build_controls()
+            controls.size_hint_x = 0.35
+            h_layout.add_widget(controls)
+            right = BoxLayout(orientation='vertical', spacing=dp(10))
+            right.add_widget(self.build_favorites())
+            right.add_widget(self.build_search_field())
+            self.scroll = ScrollView()
+            self.apps_grid = self.make_apps_grid(w * 0.6)
+            self.scroll.add_widget(self.apps_grid)
+            right.add_widget(self.scroll)
+            h_layout.add_widget(right)
+            main_layout.add_widget(h_layout)
+
+        self.status_label = Label(text="Chargement...", size_hint_y=None, height=dp(22), color=(0.5, 0.5, 0.5, 1), font_size='12sp')
+        main_layout.add_widget(self.status_label)
+
+        self.load_apps_async()
+        return main_layout
+
+    def _fav_path(self):
+        return os.path.join(self.user_data_dir, "favorites.json")
+
+    def load_favorites(self):
+        try:
+            with open(self._fav_path(), encoding="utf-8") as f:
+                data = json.load(f)
+            return [p for p in data if p in ALLOWED_APPS]
+        except Exception:
+            return list(QUICK_APPS.keys())
+
+    def save_favorites(self):
+        try:
+            with open(self._fav_path(), "w", encoding="utf-8") as f:
+                json.dump(self.favorites, f)
+        except Exception as e:
+            print("ERREUR SAUVEGARDE FAVORIS:", repr(e))
+
+    def build_favorites(self):
+        box = BoxLayout(orientation='vertical', spacing=dp(6), size_hint_y=None, height=dp(144))
+        header = BoxLayout(size_hint_y=None, height=dp(34), spacing=dp(10))
+        title = Label(text="Favoris", bold=True, font_size=dp(16), color=(1, 0.8, 0.2, 1),
+                      halign='left', valign='middle')
+        title.bind(size=lambda inst, val: setattr(inst, 'text_size', val))
+        header.add_widget(title)
+        self.fav_btn = KeyButton("Modifier", (0.25, 0.26, 0.32, 1), None,
+                                 lambda _: self.toggle_fav_edit(),
+                                 font_size=dp(14), size_hint=(None, 1), width=dp(110))
+        header.add_widget(self.fav_btn)
+        box.add_widget(header)
+
+        self.fav_scroll = ScrollView(do_scroll_x=True, do_scroll_y=False,
+                                     size_hint_y=None, height=dp(104), bar_width=0)
+        self.fav_row = BoxLayout(orientation='horizontal', spacing=dp(10), size_hint=(None, None),
+                                 height=dp(104), padding=[dp(4), dp(2), dp(4), dp(2)])
+        self.fav_row.bind(minimum_width=self.fav_row.setter('width'))
+        self.fav_scroll.add_widget(self.fav_row)
+        box.add_widget(self.fav_scroll)
+        self._refresh_favorites()
+        return box
+
+    def _refresh_favorites(self):
+        self.fav_row.clear_widgets()
+        count = 0
+        for pkg in self.favorites:
+            name = ALLOWED_APPS.get(pkg)
+            if not name:
+                continue
+            color = BRAND_COLORS.get(name, (0.2, 0.2, 0.25, 1))
+            self.fav_row.add_widget(AppCard(
+                name, pkg, color,
+                image_path=find_logo(get_slug(name)),
+                on_launch=lambda p, n=name: self.on_app_tap(p, n),
+                on_long_press=self.import_icon,
+                card_size=(dp(80), dp(100))
+            ))
+            count += 1
+        if count == 0:
+            self.fav_row.add_widget(Label(text="Aucun favori : touche Modifier", size_hint=(None, 1),
+                                          width=dp(260), color=(0.6, 0.6, 0.65, 1), font_size=dp(13)))
+
+    def toggle_fav_edit(self):
+        self.fav_edit = not self.fav_edit
+        if self.fav_edit:
+            self.fav_btn.text = "Terminé"
+            self.fav_btn.base_color = (0.1, 0.6, 0.2, 1)
+            self._update_status("Touche une appli pour l'ajouter ou la retirer des favoris")
+        else:
+            self.fav_btn.text = "Modifier"
+            self.fav_btn.base_color = (0.25, 0.26, 0.32, 1)
+            self._update_status("Favoris enregistrés")
+        self.fav_btn._col.rgba = self.fav_btn.base_color
+
+    def on_app_tap(self, pkg, name):
+        if not self.fav_edit:
+            self.launch_app_async(pkg)
+            return
+        if pkg in self.favorites:
+            self.favorites.remove(pkg)
+        else:
+            self.favorites.append(pkg)
+        self.save_favorites()
+        self._refresh_favorites()
+        self.load_apps_async()
+
+    def build_search_field(self):
         self.search_field = TextInput(
             hint_text="  Rechercher une application...",
-            size_hint_y=None, height=50, font_size='16sp',
+            size_hint_y=None, height=dp(46), font_size='16sp',
             background_color=(0.15, 0.15, 0.18, 1), foreground_color=(1, 1, 1, 1),
             cursor_color=(1, 1, 1, 1), hint_text_color=(0.5, 0.5, 0.5, 1), multiline=False
         )
         self.search_field.bind(text=self.on_search_text)
-        main_layout.add_widget(self.search_field)
+        return self.search_field
 
-        if is_portrait:
-            self.scroll = ScrollView(size_hint_y=0.58)
-            self.apps_grid = GridLayout(cols=3, spacing=dp(12), size_hint_y=None, padding=dp(12))
-            self.apps_grid.bind(minimum_height=self.apps_grid.setter('height'))
-            self.scroll.add_widget(self.apps_grid)
-            main_layout.add_widget(self.scroll)
+    def make_apps_grid(self, available_width):
+        card_w = dp(100)
+        gap = dp(12)
+        usable = available_width - dp(24)
+        cols = max(2, int(usable // (card_w + gap)))
+        side = max(dp(4), (usable - cols * card_w - (cols - 1) * gap) / 2)
+        grid = GridLayout(cols=cols, spacing=gap, size_hint_y=None,
+                          padding=[side, dp(8), side, dp(8)])
+        grid.bind(minimum_height=grid.setter('height'))
+        return grid
 
-            self.status_label = Label(text="Chargement...", size_hint_y=None, height=25, color=(0.5, 0.5, 0.5, 1), font_size='12sp')
-            main_layout.add_widget(self.status_label)
+    def build_controls(self):
+        send = self.send_key_async
+        DARK = (0.25, 0.26, 0.32, 1)
+        box = BoxLayout(orientation='vertical', spacing=dp(10))
 
-            ctrl_layout = BoxLayout(orientation='vertical', size_hint_y=0.4, spacing=8)
-            
-            row1 = GridLayout(cols=3, spacing=10, size_hint_y=0.2)
-            row1.add_widget(RoundButton("PWR", (0.9, 0.1, 0.1, 1), 26, self.send_key_async))
-            row1.add_widget(RoundButton("HOME", (0.2, 0.4, 0.8, 1), 3, self.send_key_async))
-            row1.add_widget(RoundButton("RET", (0.4, 0.4, 0.4, 1), 4, self.send_key_async))
-            ctrl_layout.add_widget(row1)
-            
-            cross_layout = BoxLayout(orientation='vertical', spacing=6, size_hint_y=0.6)
-            
-            up_row = GridLayout(cols=3, spacing=10, size_hint_y=0.33)
-            up_row.add_widget(Label(text=""))
-            up_row.add_widget(RoundButton("^", (0.3, 0.3, 0.35, 1), 19, self.send_key_async))
-            up_row.add_widget(Label(text=""))
-            cross_layout.add_widget(up_row)
-            
-            mid_row = GridLayout(cols=3, spacing=10, size_hint_y=0.34)
-            mid_row.add_widget(RoundButton("<", (0.3, 0.3, 0.35, 1), 21, self.send_key_async))
-            mid_row.add_widget(RoundButton("OK", (0.1, 0.6, 0.2, 1), 23, self.send_key_async))
-            mid_row.add_widget(RoundButton(">", (0.3, 0.3, 0.35, 1), 22, self.send_key_async))
-            cross_layout.add_widget(mid_row)
-            
-            down_row = GridLayout(cols=3, spacing=10, size_hint_y=0.33)
-            down_row.add_widget(Label(text=""))
-            down_row.add_widget(RoundButton("v", (0.3, 0.3, 0.35, 1), 20, self.send_key_async))
-            down_row.add_widget(Label(text=""))
-            cross_layout.add_widget(down_row)
-            
-            ctrl_layout.add_widget(cross_layout)
-            
-            vol_row = GridLayout(cols=3, spacing=10, size_hint_y=0.2)
-            vol_row.add_widget(RoundButton("-", (0.4, 0.4, 0.45, 1), 25, self.send_key_async))
-            vol_row.add_widget(Label(text=""))
-            vol_row.add_widget(RoundButton("+", (0.4, 0.4, 0.45, 1), 24, self.send_key_async))
-            ctrl_layout.add_widget(vol_row)
-            
-            main_layout.add_widget(ctrl_layout)
-        else:
-            h_layout = BoxLayout(orientation='horizontal', spacing=15)
-            
-            ctrl_layout = BoxLayout(orientation='vertical', size_hint_x=0.28, spacing=8)
-            
-            row1 = GridLayout(cols=3, spacing=8, size_hint_y=0.15)
-            row1.add_widget(RoundButton("PWR", (0.9, 0.1, 0.1, 1), 26, self.send_key_async, btn_size=dp(55)))
-            row1.add_widget(RoundButton("HOME", (0.2, 0.4, 0.8, 1), 3, self.send_key_async, btn_size=dp(55)))
-            row1.add_widget(RoundButton("RET", (0.4, 0.4, 0.4, 1), 4, self.send_key_async, btn_size=dp(55)))
-            ctrl_layout.add_widget(row1)
-            
-            cross_layout = BoxLayout(orientation='vertical', spacing=6, size_hint_y=0.6)
-            
-            up_row = GridLayout(cols=3, spacing=8, size_hint_y=0.33)
-            up_row.add_widget(Label(text=""))
-            up_row.add_widget(RoundButton("^", (0.3, 0.3, 0.35, 1), 19, self.send_key_async, btn_size=dp(55)))
-            up_row.add_widget(Label(text=""))
-            cross_layout.add_widget(up_row)
-            
-            mid_row = GridLayout(cols=3, spacing=8, size_hint_y=0.34)
-            mid_row.add_widget(RoundButton("<", (0.3, 0.3, 0.35, 1), 21, self.send_key_async, btn_size=dp(55)))
-            mid_row.add_widget(RoundButton("OK", (0.1, 0.6, 0.2, 1), 23, self.send_key_async, btn_size=dp(55)))
-            mid_row.add_widget(RoundButton(">", (0.3, 0.3, 0.35, 1), 22, self.send_key_async, btn_size=dp(55)))
-            cross_layout.add_widget(mid_row)
-            
-            down_row = GridLayout(cols=3, spacing=8, size_hint_y=0.33)
-            down_row.add_widget(Label(text=""))
-            down_row.add_widget(RoundButton("v", (0.3, 0.3, 0.35, 1), 20, self.send_key_async, btn_size=dp(55)))
-            down_row.add_widget(Label(text=""))
-            cross_layout.add_widget(down_row)
-            
-            ctrl_layout.add_widget(cross_layout)
-            
-            vol_row = GridLayout(cols=3, spacing=8, size_hint_y=0.15)
-            vol_row.add_widget(RoundButton("-", (0.4, 0.4, 0.45, 1), 25, self.send_key_async, btn_size=dp(55)))
-            vol_row.add_widget(Label(text=""))
-            vol_row.add_widget(RoundButton("+", (0.4, 0.4, 0.45, 1), 24, self.send_key_async, btn_size=dp(55)))
-            ctrl_layout.add_widget(vol_row)
-            
-            h_layout.add_widget(ctrl_layout)
-            
-            right_layout = BoxLayout(orientation='vertical')
-            self.scroll = ScrollView()
-            self.apps_grid = GridLayout(cols=4, spacing=dp(12), size_hint_y=None, padding=dp(12))
-            self.apps_grid.bind(minimum_height=self.apps_grid.setter('height'))
-            self.scroll.add_widget(self.apps_grid)
-            right_layout.add_widget(self.scroll)
-            
-            self.status_label = Label(text="Chargement...", size_hint_y=None, height=25, color=(0.5, 0.5, 0.5, 1), font_size='12sp')
-            right_layout.add_widget(self.status_label)
-            
-            h_layout.add_widget(right_layout)
-            main_layout.add_widget(h_layout)
+        top = BoxLayout(spacing=dp(10), size_hint_y=None, height=dp(52))
+        top.add_widget(KeyButton("PWR", (0.85, 0.15, 0.15, 1), 26, send))
+        top.add_widget(Widget())
+        top.add_widget(KeyButton("MUTE", DARK, 164, send))
+        box.add_widget(top)
 
-        self.load_apps_async()
-        return main_layout
+        dpad_container = AnchorLayout(anchor_x='center', anchor_y='center')
+        dpad_container.add_widget(DPad(send, size_hint=(None, None), size=(dp(260), dp(260))))
+        box.add_widget(dpad_container)
+
+        nav = BoxLayout(spacing=dp(10), size_hint_y=None, height=dp(52))
+        nav.add_widget(KeyButton("RET", DARK, 4, send))
+        nav.add_widget(KeyButton("HOME", (0.2, 0.4, 0.8, 1), 3, send))
+        nav.add_widget(KeyButton("MENU", DARK, 82, send))
+        box.add_widget(nav)
+
+        bottom = BoxLayout(spacing=dp(10), size_hint_y=None, height=dp(112))
+        vol = BoxLayout(orientation='vertical', spacing=dp(8))
+        vol.add_widget(KeyButton("VOL +", DARK, 24, send))
+        vol.add_widget(KeyButton("VOL -", DARK, 25, send))
+        mid = BoxLayout(orientation='vertical', spacing=dp(8))
+        mid.add_widget(KeyButton("PLAY", DARK, 85, send))
+        mid.add_widget(KeyButton("STOP", DARK, 86, send))
+        ch = BoxLayout(orientation='vertical', spacing=dp(8))
+        ch.add_widget(KeyButton("CH +", DARK, 166, send))
+        ch.add_widget(KeyButton("CH -", DARK, 167, send))
+        bottom.add_widget(vol)
+        bottom.add_widget(mid)
+        bottom.add_widget(ch)
+        box.add_widget(bottom)
+        return box
 
     def get_signer(self):
         key_path = os.path.join(self.user_data_dir, "tvremote_adb_key")
@@ -347,7 +497,7 @@ class TVRemoteApp(App):
             Clock.schedule_once(lambda dt: self._update_status("TV non connectée"), 0)
 
     def load_apps(self):
-        app_list = sorted([(name, pkg) for pkg, name in ALLOWED_APPS.items() if pkg not in QUICK_APPS], key=lambda x: x[0])
+        app_list = sorted([(name, pkg) for pkg, name in ALLOWED_APPS.items()], key=lambda x: x[0].lower())
         Clock.schedule_once(lambda dt: self._display_apps(app_list), 0)
 
     def on_search_text(self, instance, value):
@@ -359,23 +509,18 @@ class TVRemoteApp(App):
         filtered_list = list(app_list)
         if self.search_text:
             filtered_list = [(name, pkg) for name, pkg in app_list if self.search_text in name.lower()]
-            for pkg, name in QUICK_APPS.items():
-                if self.search_text in name.lower():
-                    if not any(p == pkg for _, p in filtered_list):
-                        filtered_list.insert(0, (name, pkg))
-        else:
-            for pkg, name in QUICK_APPS.items():
-                filtered_list.insert(0, (name, pkg))
 
-        self.status_label.text = f"{len(filtered_list)} applications"
+        if not self.fav_edit:
+            self.status_label.text = f"{len(filtered_list)} applications"
 
         for clean_name, pkg in filtered_list:
             color = BRAND_COLORS.get(clean_name, (0.2, 0.2, 0.25, 1))
             card = AppCard(
                 clean_name, pkg, color,
                 image_path=find_logo(get_slug(clean_name)),
-                on_launch=lambda p: self.launch_app_async(p),
-                on_long_press=self.import_icon
+                on_launch=lambda p, n=clean_name: self.on_app_tap(p, n),
+                on_long_press=self.import_icon,
+                is_fav=(pkg in self.favorites)
             )
             self.apps_grid.add_widget(card)
 
